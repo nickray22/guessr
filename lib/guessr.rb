@@ -8,12 +8,31 @@ module Guessr
   module Models
     class Player < Base
       validates :name, presence: true, uniqueness: true
-      # alternately: validates :name, presence: true
+      #alternately validates :name, presence: true
+    end
+
+    class NumberGuessing < Base
+      validates :number, presence: true,
+        format: {with: /\A[1-9]+\z/, message: 'only digits are allowed'}
+      before_save :set_finished!, if: :finished?
+
+      def guess_number(number)
+        self.guess = number
+      end
+
+      private
+      def finished?
+        !self.continue?
+      end
+
+      def set_finished!
+        self.finished = true
+      end
     end
 
     class Hangman < Base
       validates :answer, presence: true,
-        format: { with: /^[a-z]+$/, message: "only lowercase words allowed"}
+        format: { with: /\A[a-z]+\z/, message: "only lowercase words allowed"}
       serialize :guesses
       before_save :set_finished!, if: :finished?
 
@@ -51,6 +70,27 @@ module Guessr
       def self.down
         drop_table Player.table_name
         drop_table Hangman.table_name
+      end
+    end
+
+    class NumberGuessingSchema < V 1.1
+      def self.up
+        create_table Player.table_name do |t|
+          t.string :name
+          t.timestamps
+        end
+
+        create_table NumberGuessing.table_name do |t|
+          t.integer :number
+          t.integer :guess
+          t.boolean :finished
+          t.timestamps
+        end
+      end
+
+      def self.down
+        drop_table Player.table_name
+        drop_table NumberGuessing.table_name
       end
     end
 
